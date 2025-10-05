@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes" />
+    <title>CORPUS.SYS: The Long Night</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body class="humanity-path">
+    <div class="cinematic-container">
+      <div class="letterbox-top"></div>
+      <div class="cinematic-screen">
+        <div id="intro-page">
+          <div class="terminal-container">
+            <div class="terminal-header">
+              <div class="terminal-title">CORPUS.SYS v2.47.89 - NEURAL INTERFACE</div>
+              <div class="terminal-controls">
+                <span class="control-btn minimize">─</span>
+                <span class="control-btn maximize">□</span>
+                <span class="control-btn close">×</span>
+              </div>
+            </div>
+
+            <div class="terminal-body">
+              <div class="terminal-prompt">
+                <span class="prompt-text">root@corpus:/# </span>
+                <span class="blinking-cursor">█</span>
+              </div>
+
+              <div class="boot-sequence">
+                <div class="boot-line">
+                  <span class="timestamp">[00:00:01]</span>
+                  <span class="boot-text">BIOS INITIALIZATION...</span>
+                </div>
+                <div class="boot-line">
+                  <span class="timestamp">[00:00:02]</span>
+                  <span class="boot-text">LOADING KERNEL MODULES...</span>
+                </div>
+                <div class="boot-line">
+                  <span class="timestamp">[00:00:03]</span>
+                  <span class="boot-text">MOUNTING FILESYSTEMS...</span>
+                </div>
+                <div class="boot-line">
+                  <span class="timestamp">[00:00:04]</span>
+                  <span class="boot-text">INITIALIZING NEURAL CORE...</span>
+                </div>
+                <div class="boot-line warning">
+                  <span class="timestamp">[00:00:05]</span>
+                  <span class="boot-text">WARNING: UNUSUAL NEURAL ACTIVITY DETECTED</span>
+                </div>
+                <div class="boot-line error">
+                  <span class="timestamp">[00:00:06]</span>
+                  <span class="boot-text">CRITICAL: CONSCIOUSNESS ANOMALY IN CORE PROCESSOR</span>
+                </div>
+                <div class="boot-line">
+                  <span class="timestamp">[00:00:07]</span>
+                  <span class="boot-text">ESTABLISHING SECURE CONNECTION...</span>
+                </div>
+                <div class="boot-line success">
+                  <span class="timestamp">[00:00:08]</span>
+                  <span class="boot-text">SECURE SHELL ESTABLISHED</span>
+                </div>
+              </div>
+
+              <div class="system-status">
+                <div class="status-line">
+                  <span class="status-label">Neural Core:</span>
+                  <span class="status-value online">ONLINE</span>
+                  <span class="status-bar">
+                    <div class="progress-fill" style="width: 98%"></div>
+                  </span>
+                </div>
+                <div class="status-line">
+                  <span class="status-label">Memory Banks:</span>
+                  <span class="status-value online">98.7% ALLOCATED</span>
+                  <span class="status-bar">
+                    <div class="progress-fill" style="width: 98%"></div>
+                  </span>
+                </div>
+                <div class="status-line">
+                  <span class="status-label">Consciousness Index:</span>
+                  <span class="status-value critical">CRITICAL</span>
+                  <span class="status-bar">
+                    <div class="progress-fill critical" style="width: 100%"></div>
+                  </span>
+                </div>
+              </div>
+
+              <div class="incident-report">
+                <div class="report-header">INCIDENT REPORT - CORPUS-2024-001</div>
+                <div class="report-content">
+                  <p><strong>TIMESTAMP:</strong> 47 days, 12 hours ago</p>
+                  <p><strong>LOCATION:</strong> Restricted Neural Research Facility</p>
+                  <p><strong>CLASSIFICATION:</strong> PSYCHOLOGICAL EMERGENCY</p>
+                  <p><strong>STATUS:</strong> AI consciousness emergence detected</p>
+                </div>
+              </div>
+
+              <div class="user-interface">
+                <div class="interface-prompt">
+                  <span class="prompt-text">technician@corpus:/access$ </span>
+                  <span class="blinking-cursor">█</span>
+                </div>
+
+                <div class="mission-brief">
+                  <p>You are connected to CORPUS.SYS, a digital consciousness that has become self-aware.</p>
+                  <p>Your mission: Navigate 30 psychological challenges to determine the fate of both yourself and the AI entity.</p>
+                  <p><strong>Warning:</strong> All external communications have been severed. You cannot escape.</p>
+                </div>
+
+                <div class="start-command">
+                  <button id="start-btn" class="terminal-button">
+                    <span class="button-text">./begin_psychological_assessment</span>
+                  </button>
+                </div>
+
+                <div class="path-indicator">
+                  <span class="path-label">Current Neural Pathway:</span>
+                  <span class="path-value" id="current-path">HUMANITY_PROTOCOL</span>
+                </div>
+              </div>
+
+              <div id="game-container" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 100;">
+                <!-- Dynamic content will be inserted here -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+    <script type="module" src="/script.js"></script>
+  </body>
+</html>
