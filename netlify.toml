@@ -1,0 +1,7 @@
+[build]
+  publish = "public"
+  command = "bun install && bun run build" # Example if you needed the build script
+  
+[build.environment]
+  # Optional: Define build environment to ensure compatibility if a build command is used
+  NODE_VERSION = "20"
