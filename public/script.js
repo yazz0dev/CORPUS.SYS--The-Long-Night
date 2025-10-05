@@ -1,4 +1,4 @@
-// CORPUS.SYS: The Long Night - Final Refactored Controller
+// CORPUS.SYS: The Long Night - Enhanced Controller (v2.0)
 import { allTasks } from "./tasks.js";
 import * as chaos from "./generator.js";
 
@@ -16,41 +16,14 @@ const state = {
 };
 
 // --- AUDIO ENGINE ---
-// (Your existing, excellent audio engine code remains here. No changes needed.)
 let audioContext;
 let isAudioInitialized = false;
-let gainNode;
-let heartbeatOscillator = null;
-let ambientOscillator = null;
-let ambientFilter = null;
-let currentHeartbeatFreq = 60; // BPM
-let currentAmbientFreq = 55; // Hz
-let ambientGainNode = null;
-let isAmbientPlaying = false;
-
-// Audio buffers for different path sounds
+let gainNode, ambientGainNode;
+let heartbeatOscillator, ambientOscillator, ambientFilter;
 const audioBuffers = {
-  humanity: {
-    click: null,
-    ambient: null,
-    whisper: null,
-    hover: null,
-    error: null,
-  },
-  power: {
-    click: null,
-    ambient: null,
-    whisper: null,
-    hover: null,
-    error: null,
-  },
-  bliss: {
-    click: null,
-    ambient: null,
-    whisper: null,
-    hover: null,
-    error: null,
-  },
+  humanity: { click: null, hover: null, error: null },
+  power: { click: null, hover: null, error: null },
+  bliss: { click: null, hover: null, error: null },
 };
 
 // Generate a seed based on current state
@@ -65,201 +38,39 @@ function generateSeed() {
   return Math.abs(hash);
 }
 
-// Initialize audio context, heartbeat, and ambient sound system
-async function initializeAudio() {
-  if (isAudioInitialized) return;
-
-  try {
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    gainNode = audioContext.createGain();
-    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-    gainNode.connect(audioContext.destination);
-
-    // Create ambient gain node for separate control
-    ambientGainNode = audioContext.createGain();
-    ambientGainNode.gain.setValueAtTime(0.05, audioContext.currentTime);
-    ambientGainNode.connect(gainNode);
-
-    // Generate audio buffers for different paths
-    await generateAudioBuffers();
-
-    startHeartbeat();
-    startAmbientSound();
-    isAudioInitialized = true;
-  } catch (error) {
-    console.warn("Audio initialization failed:", error);
-  }
-}
-
-// Generate comprehensive audio buffers for different interaction sounds per path
-async function generateAudioBuffers() {
-  const sampleRate = audioContext.sampleRate;
-
-  // Generate sound effects for each path
-  for (const path of ["humanity", "power", "bliss"]) {
-    // Click sounds
-    const clickBuffer = audioContext.createBuffer(
-      1,
-      sampleRate * 0.1,
-      sampleRate
-    );
-    const clickData = clickBuffer.getChannelData(0);
-
-    for (let i = 0; i < clickData.length; i++) {
-      const t = i / sampleRate;
-      let wave = 0;
-
-      switch (path) {
-        case "humanity":
-          // Harsh, mechanical click with slight distortion
-          wave = Math.sin(2 * Math.PI * 800 * t) * Math.exp(-t * 20) * 0.3;
-          wave += Math.sin(2 * Math.PI * 1600 * t) * Math.exp(-t * 30) * 0.1;
-          break;
-        case "power":
-          // Sharp, aggressive click
-          wave = Math.sin(2 * Math.PI * 1000 * t) * Math.exp(-t * 15) * 0.4;
-          break;
-        case "bliss":
-          // Soft, chime-like click
-          wave = Math.sin(2 * Math.PI * 600 * t) * Math.exp(-t * 8) * 0.2;
-          wave += Math.sin(2 * Math.PI * 1200 * t) * Math.exp(-t * 12) * 0.1;
-          break;
-      }
-
-      clickData[i] = wave;
-    }
-
-    audioBuffers[path].click = clickBuffer;
-
-    // Hover sounds
-    const hoverBuffer = audioContext.createBuffer(
-      1,
-      sampleRate * 0.05,
-      sampleRate
-    );
-    const hoverData = hoverBuffer.getChannelData(0);
-
-    for (let i = 0; i < hoverData.length; i++) {
-      const t = i / sampleRate;
-      let wave = 0;
-
-      switch (path) {
-        case "humanity":
-          wave = Math.sin(2 * Math.PI * 400 * t) * Math.exp(-t * 40) * 0.1;
-          break;
-        case "power":
-          wave = Math.sin(2 * Math.PI * 600 * t) * Math.exp(-t * 30) * 0.15;
-          break;
-        case "bliss":
-          wave = Math.sin(2 * Math.PI * 300 * t) * Math.exp(-t * 50) * 0.08;
-          break;
-      }
-
-      hoverData[i] = wave;
-    }
-
-    audioBuffers[path].hover = hoverBuffer;
-
-    // Error sounds
-    const errorBuffer = audioContext.createBuffer(
-      1,
-      sampleRate * 0.3,
-      sampleRate
-    );
-    const errorData = errorBuffer.getChannelData(0);
-
-    for (let i = 0; i < errorData.length; i++) {
-      const t = i / sampleRate;
-      let wave = 0;
-
-      switch (path) {
-        case "humanity":
-          wave = Math.sin(2 * Math.PI * 150 * t) * Math.exp(-t * 3) * 0.2;
-          wave += Math.random() * 0.1 - 0.05; // Add noise
-          break;
-        case "power":
-          wave = Math.sin(2 * Math.PI * 100 * t) * Math.exp(-t * 2) * 0.3;
-          wave += Math.sin(2 * Math.PI * 50 * t) * Math.exp(-t * 4) * 0.1;
-          break;
-        case "bliss":
-          wave = Math.sin(2 * Math.PI * 200 * t) * Math.exp(-t * 5) * 0.15;
-          break;
-      }
-
-      errorData[i] = wave;
-    }
-
-    audioBuffers[path].error = errorBuffer;
-  }
-}
-
-// Start the ambient heartbeat that changes based on path
-function startHeartbeat() {
-  if (heartbeatOscillator) {
-    heartbeatOscillator.stop();
-  }
-
-  heartbeatOscillator = audioContext.createOscillator();
-  const heartbeatGain = audioContext.createGain();
-
-  heartbeatOscillator.connect(heartbeatGain);
-  heartbeatGain.connect(gainNode);
-
-  updateHeartbeat();
-  heartbeatOscillator.start();
-
-  // Update heartbeat every 30 seconds
-  state.heartbeatInterval = setInterval(updateHeartbeat, 30000);
-}
-
 // Start ambient sound system with dynamic theming
 function startAmbientSound() {
-  if (ambientOscillator) {
-    ambientOscillator.stop();
-  }
-
+  if (!audioContext) return;
+  if (ambientOscillator) ambientOscillator.stop();
   ambientOscillator = audioContext.createOscillator();
   ambientFilter = audioContext.createBiquadFilter();
-
   ambientOscillator.connect(ambientFilter);
   ambientFilter.connect(ambientGainNode);
-
   updateAmbientSound();
   ambientOscillator.start();
-
-  // Ambient sound continues indefinitely
 }
 
 // Update ambient sound based on current theme
 function updateAmbientSound() {
   if (!ambientOscillator || !audioContext) return;
-
   const now = audioContext.currentTime;
   const currentPath = getCurrentPath();
-
-  // Different ambient frequencies and characteristics per path
   switch (currentPath) {
     case "power":
-      // Tense, oppressive drone
       ambientOscillator.frequency.setValueAtTime(55, now);
       ambientOscillator.type = "sawtooth";
       ambientFilter.frequency.setValueAtTime(200, now);
       ambientFilter.type = "lowpass";
       ambientGainNode.gain.setValueAtTime(0.03, now);
       break;
-
     case "bliss":
-      // Ethereal, choir-like ambience
       ambientOscillator.frequency.setValueAtTime(110, now);
       ambientOscillator.type = "sine";
       ambientFilter.frequency.setValueAtTime(800, now);
       ambientFilter.type = "highpass";
       ambientGainNode.gain.setValueAtTime(0.02, now);
       break;
-
-    case "humanity":
     default:
-      // Grounded, mechanical hum
       ambientOscillator.frequency.setValueAtTime(75, now);
       ambientOscillator.type = "square";
       ambientFilter.frequency.setValueAtTime(400, now);
@@ -269,36 +80,12 @@ function updateAmbientSound() {
   }
 }
 
-// Set ambience for theme transitions with crossfade
-function setAmbience(themeName) {
-  if (!ambientOscillator || !audioContext) return;
-
-  const now = audioContext.currentTime;
-
-  // Smooth crossfade to new ambience
-  ambientGainNode.gain.cancelScheduledValues(now);
-  ambientGainNode.gain.setValueAtTime(ambientGainNode.gain.value, now);
-  ambientGainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-
-  setTimeout(() => {
-    updateAmbientSound();
-    ambientGainNode.gain.cancelScheduledValues(audioContext.currentTime);
-    ambientGainNode.gain.setValueAtTime(0.01, audioContext.currentTime);
-    ambientGainNode.gain.exponentialRampToValueAtTime(
-      0.025,
-      audioContext.currentTime + 1
-    );
-  }, 500);
-}
-
 // Update heartbeat based on current path
 function updateHeartbeat() {
   if (!heartbeatOscillator || !audioContext) return;
-
   const now = audioContext.currentTime;
   const bpm = getHeartbeatBPM();
   const frequency = bpm / 60;
-
   heartbeatOscillator.frequency.setValueAtTime(frequency, now);
 
   // Different waveforms per path
@@ -338,14 +125,324 @@ function getHeartbeatBPM() {
   }
 }
 
+// Get current path based on pathScore
+function getCurrentPath() {
+  if (state.pathScore <= -3) return "power";
+  if (state.pathScore >= 3) return "bliss";
+  return "humanity";
+}
+
+// --- CORE APPLICATION LOGIC ---
+
+/**
+ * Main function to render a task based on the current game state.
+ */
+async function renderTask() {
+  if (state.isTransitioning) return;
+  state.isTransitioning = true;
+
+  const taskNumber = state.depth + 1;
+  const currentTask = allTasks.find((task) => task.id === taskNumber);
+
+  if (!currentTask) {
+    console.error(`Task ${taskNumber} not found. Reached end of narrative.`);
+    showEnding();
+    return;
+  }
+
+  const container = document.getElementById("game-container");
+  container.innerHTML = ""; // Clear previous task
+
+  const taskShell = document.createElement("div");
+  taskShell.className = "task-container"; // Starts invisible due to new CSS rules
+  taskShell.innerHTML = `
+    <div class="task-header">
+      <h2 class="task-title">${currentTask.title}</h2>
+      <p class="task-description">${currentTask.description}</p>
+    </div>
+    <div class="task-content"></div>
+    <div class="task-choices"></div>
+  `;
+  container.appendChild(taskShell);
+
+  const contentContainer = taskShell.querySelector(".task-content");
+  const choicesContainer = taskShell.querySelector(".task-choices");
+
+  if (currentTask.render) {
+    currentTask.render(contentContainer, state, chaos);
+  }
+
+  currentTask.choices.forEach((choice) => {
+    const button = document.createElement("button");
+    button.className = `choice-btn ${choice.type}-choice`;
+    button.textContent = choice.text;
+    button.onclick = () => handleChoiceSelection(choice);
+    choicesContainer.appendChild(button);
+  });
+
+  // Allow the browser to render the invisible state first
+  await new Promise((resolve) => setTimeout(resolve, 50));
+
+  await revealTaskCinematically(taskShell);
+  state.isTransitioning = false;
+}
+
+/**
+ * Controls the cinematic reveal of task elements by triggering CSS animations.
+ */
+async function revealTaskCinematically(taskContainer) {
+  taskContainer.classList.add("visible");
+
+  await new Promise((resolve) => setTimeout(resolve, 500)); // Wait for container fade-in
+
+  const titleEl = taskContainer.querySelector(".task-title");
+  const descEl = taskContainer.querySelector(".task-description");
+
+  if (titleEl && titleEl.textContent) {
+    await typeText(titleEl, titleEl.textContent);
+  }
+  if (descEl && descEl.textContent) {
+    await typeText(descEl, descEl.textContent);
+  }
+}
+
+/**
+ * Handles the logic when a user clicks a choice button.
+ * @param {object} choiceObject - The choice object from tasks.js
+ */
+async function handleChoiceSelection(choiceObject) {
+  if (state.isTransitioning) return;
+  state.isTransitioning = true;
+
+  // Safety check for playInteractionSound
+  if (typeof playInteractionSound === "function" && isAudioInitialized) {
+    playInteractionSound("click");
+  }
+  document
+    .querySelectorAll(".choice-btn")
+    .forEach((btn) => (btn.disabled = true));
+
+  const resultMessage = choiceObject.onSelect(state);
+
+  if (choiceObject.type === "power") triggerPowerPathEvent();
+  if (choiceObject.type === "bliss") showBlissPathReward();
+
+  await showAnalyzingOverlay(resultMessage);
+
+  if (checkLimboThreshold()) {
+    state.isTransitioning = false;
+    return;
+  }
+
+  await nextTask();
+}
+
+/**
+ * Transitions to the next task or the ending.
+ */
+async function nextTask() {
+  state.depth++;
+  state.history.push(state.currentSeed);
+  state.currentSeed = generateSeed();
+
+  applyEffects();
+
+  if (state.depth >= allTasks.length) {
+    showEnding();
+  } else {
+    const container = document.getElementById("game-container");
+    container.style.transition = "opacity 0.5s ease-out";
+    container.style.opacity = "0";
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    renderTask();
+    container.style.opacity = "1";
+  }
+}
+
+// Initialize audio context, heartbeat, and ambient sound system
+async function initializeAudio() {
+  if (isAudioInitialized) return;
+
+  try {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    gainNode = audioContext.createGain();
+    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+    gainNode.connect(audioContext.destination);
+
+    // Create ambient gain node for separate control
+    ambientGainNode = audioContext.createGain();
+    ambientGainNode.gain.setValueAtTime(0.05, audioContext.currentTime);
+    ambientGainNode.connect(gainNode);
+
+    // Generate audio buffers for different paths
+    await generateAudioBuffers();
+
+    startHeartbeat();
+    startAmbientSound();
+    isAudioInitialized = true;
+  } catch (error) {
+    console.warn("Audio initialization failed:", error);
+  }
+}
+
+// Generate comprehensive audio buffers for different interaction sounds per path
+async function generateAudioBuffers() {
+  if (!audioContext) return;
+  const sampleRate = audioContext.sampleRate;
+
+  // Generate sound effects for each path
+  for (const path of ["humanity", "power", "bliss"]) {
+    // Click sounds
+    const clickBuffer = audioContext.createBuffer(
+      1,
+      sampleRate * 0.1,
+      sampleRate
+    );
+    const clickData = clickBuffer.getChannelData(0);
+
+    for (let i = 0; i < clickData.length; i++) {
+      const t = i / sampleRate;
+      let wave = 0;
+      switch (path) {
+        case "humanity":
+          wave =
+            Math.sin(2 * Math.PI * 800 * t) * Math.exp(-t * 20) * 0.3 +
+            Math.sin(2 * Math.PI * 1600 * t) * Math.exp(-t * 30) * 0.1;
+          break;
+        case "power":
+          wave = Math.sin(2 * Math.PI * 1000 * t) * Math.exp(-t * 15) * 0.4;
+          break;
+        case "bliss":
+          wave =
+            Math.sin(2 * Math.PI * 600 * t) * Math.exp(-t * 8) * 0.2 +
+            Math.sin(2 * Math.PI * 1200 * t) * Math.exp(-t * 12) * 0.1;
+          break;
+      }
+      clickData[i] = wave;
+    }
+    audioBuffers[path].click = clickBuffer;
+  }
+
+  // Hover sounds
+  for (const path of ["humanity", "power", "bliss"]) {
+    const hoverBuffer = audioContext.createBuffer(
+      1,
+      sampleRate * 0.05,
+      sampleRate
+    );
+    const hoverData = hoverBuffer.getChannelData(0);
+
+    for (let i = 0; i < hoverData.length; i++) {
+      const t = i / sampleRate;
+      let wave = 0;
+      switch (path) {
+        case "humanity":
+          wave = Math.sin(2 * Math.PI * 400 * t) * Math.exp(-t * 40) * 0.1;
+          break;
+        case "power":
+          wave =
+            Math.sin(2 * Math.PI * 300 * t) * Math.exp(-t * 25) * 0.15 +
+            Math.sin(2 * Math.PI * 600 * t) * Math.exp(-t * 35) * 0.05;
+          break;
+        case "bliss":
+          wave =
+            Math.sin(2 * Math.PI * 500 * t) * Math.exp(-t * 30) * 0.12 +
+            Math.sin(2 * Math.PI * 1000 * t) * Math.exp(-t * 40) * 0.03;
+          break;
+      }
+      hoverData[i] = wave;
+    }
+    audioBuffers[path].hover = hoverBuffer;
+  }
+
+  // Error sounds
+  for (const path of ["humanity", "power", "bliss"]) {
+    const errorBuffer = audioContext.createBuffer(
+      1,
+      sampleRate * 0.3,
+      sampleRate
+    );
+    const errorData = errorBuffer.getChannelData(0);
+
+    for (let i = 0; i < errorData.length; i++) {
+      const t = i / sampleRate;
+      let wave = 0;
+      switch (path) {
+        case "humanity":
+          wave =
+            Math.sin(2 * Math.PI * 150 * t) * Math.exp(-t * 3) * 0.2 +
+            Math.sin(2 * Math.PI * 75 * t) * Math.exp(-t * 5) * 0.1;
+          break;
+        case "power":
+          wave =
+            Math.sin(2 * Math.PI * 200 * t) * Math.exp(-t * 2) * 0.25 +
+            Math.sin(2 * Math.PI * 100 * t) * Math.exp(-t * 4) * 0.15;
+          break;
+        case "bliss":
+          wave =
+            Math.sin(2 * Math.PI * 180 * t) * Math.exp(-t * 2.5) * 0.22 +
+            Math.sin(2 * Math.PI * 90 * t) * Math.exp(-t * 4.5) * 0.08;
+          break;
+      }
+      errorData[i] = wave;
+    }
+    audioBuffers[path].error = errorBuffer;
+  }
+}
+
+// Start the ambient heartbeat that changes based on path
+function startHeartbeat() {
+  if (heartbeatOscillator) {
+    heartbeatOscillator.stop();
+  }
+
+  heartbeatOscillator = audioContext.createOscillator();
+  const heartbeatGain = audioContext.createGain();
+
+  heartbeatOscillator.connect(heartbeatGain);
+  heartbeatGain.connect(gainNode);
+
+  updateHeartbeat();
+  heartbeatOscillator.start();
+
+  // Update heartbeat every 30 seconds
+  state.heartbeatInterval = setInterval(updateHeartbeat, 30000);
+}
+
+// Set ambience for theme transitions with crossfade
+function setAmbience(themeName) {
+  if (!ambientOscillator || !audioContext) return;
+
+  const now = audioContext.currentTime;
+
+  // Smooth crossfade to new ambience
+  ambientGainNode.gain.cancelScheduledValues(now);
+  ambientGainNode.gain.setValueAtTime(ambientGainNode.gain.value, now);
+  ambientGainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+
+  setTimeout(() => {
+    updateAmbientSound();
+    ambientGainNode.gain.cancelScheduledValues(audioContext.currentTime);
+    ambientGainNode.gain.setValueAtTime(0.01, audioContext.currentTime);
+    ambientGainNode.gain.exponentialRampToValueAtTime(
+      0.025,
+      audioContext.currentTime + 1
+    );
+  }, 500);
+}
+
 // Play hover sound effect
 function playHoverSound() {
-  playInteractionSound("hover");
+  if (typeof playInteractionSound === "function" && isAudioInitialized) {
+    playInteractionSound("hover");
+  }
 }
 
 // Play error sound effect
 function playErrorSound() {
-  playInteractionSound("error");
+  if (typeof playInteractionSound === "function" && isAudioInitialized) {
+    playInteractionSound("error");
+  }
 }
 
 // Play whisper sound effect (only on power path)
@@ -380,11 +477,22 @@ function playWhisper() {
   setTimeout(playWhisper, 10000 + Math.random() * 20000);
 }
 
-// Get current path based on pathScore
-function getCurrentPath() {
-  if (state.pathScore < 0) return "power";
-  if (state.pathScore > 0) return "bliss";
-  return "humanity";
+// Play interaction sound based on current path
+function playInteractionSound(type = "click") {
+  // Safety check - ensure function is properly defined
+  if (typeof playInteractionSound !== "function") {
+    console.warn("playInteractionSound function not available");
+    return;
+  }
+
+  if (!audioContext || !isAudioInitialized) return;
+  const currentPath = getCurrentPath();
+  const buffer = audioBuffers[currentPath]?.[type];
+  if (!buffer) return;
+  const source = audioContext.createBufferSource();
+  source.buffer = buffer;
+  source.connect(gainNode);
+  source.start();
 }
 
 // Enhanced theme system with comprehensive setTheme function
@@ -901,7 +1009,12 @@ function typeText(element, text, options = {}) {
             element.textContent = element.textContent.slice(0, -1) + char;
             currentText = currentText.slice(0, -1) + char;
           }
-          playInteractionSound("click");
+          if (
+            typeof playInteractionSound === "function" &&
+            isAudioInitialized
+          ) {
+            playInteractionSound("click");
+          }
         }, 100 + Math.random() * 200);
 
         state.typingTimeouts.push(correctionTimeout);
@@ -975,27 +1088,6 @@ function typeText(element, text, options = {}) {
   // Start typing with initial delay
   const startTimeout = setTimeout(typeChar, 100);
   state.typingTimeouts.push(startTimeout);
-}
-
-// Type text into an element, replacing placeholders
-function typeDynamicText(template, data = {}) {
-  let text = template;
-
-  // Replace placeholders like {{variable}} with data
-  Object.keys(data).forEach((key) => {
-    const placeholder = `{{${key}}}`;
-    text = text.replace(new RegExp(placeholder, "g"), data[key]);
-  });
-
-  // Find elements with data-type-text attribute
-  document.querySelectorAll("[data-typed-text]").forEach((element) => {
-    const elementText = element.getAttribute("data-typed-text");
-    if (elementText && element.textContent === "") {
-      typeText(element, elementText);
-    }
-  });
-
-  return text;
 }
 
 // Show reward overlay for Bliss path choices
@@ -1411,295 +1503,6 @@ function createRedactedLog() {
   });
 }
 
-// --- CORE APPLICATION LOGIC ---
-
-/**
- * Main function to render a task based on the current game state.
- */
-async function renderTask() {
-  if (state.isTransitioning) return;
-  state.isTransitioning = true;
-
-  // Find the correct task object from allTasks
-  const taskNumber = state.depth + 1;
-  const currentTask = allTasks.find((task) => task.id === taskNumber);
-
-  if (!currentTask) {
-    console.error(`Task ${taskNumber} not found. Reached end of narrative.`);
-    showEnding();
-    return;
-  }
-
-  console.log(`Rendering task ${taskNumber}: ${currentTask.title}`);
-
-  // Clear the game container for the new task
-  const container = document.getElementById("game-container");
-  console.log("Game container found:", !!container);
-  container.innerHTML = "";
-  container.className = "visible"; // Ensure it's displayed
-  console.log("Container HTML after clear:", container.innerHTML);
-
-  // Create the standard task shell
-  const taskShell = document.createElement("div");
-  taskShell.className = "task-container";
-  taskShell.innerHTML = `
-    <div class="task-header">
-      <h2 class="task-title">${currentTask.title}</h2>
-      <p class="task-description">${currentTask.description}</p>
-    </div>
-    <div class="task-content"></div>
-    <div class="task-choices"></div>
-  `;
-  container.appendChild(taskShell);
-
-  const contentContainer = taskShell.querySelector(".task-content");
-  const choicesContainer = taskShell.querySelector(".task-choices");
-
-  console.log("Content container found:", !!contentContainer);
-  console.log("Choices container found:", !!choicesContainer);
-
-  // Delegate unique UI rendering to the task object
-  if (currentTask.render) {
-    console.log("Calling task render function");
-    currentTask.render(contentContainer, state);
-    console.log(
-      "Content container HTML after render:",
-      contentContainer.innerHTML
-    );
-  }
-
-  // Create and attach choice buttons
-  currentTask.choices.forEach((choice) => {
-    const button = document.createElement("button");
-    button.className = `choice-btn ${choice.type}-choice`;
-    button.textContent = choice.text;
-    button.onclick = () => handleChoiceSelection(choice);
-    choicesContainer.appendChild(button);
-  });
-
-  console.log("Task shell HTML:", taskShell.innerHTML);
-
-  // Use cinematic animations to reveal the task
-  await revealTaskCinematically(taskShell);
-
-  state.isTransitioning = false;
-}
-
-/**
- * Controls the cinematic reveal of task elements.
- */
-async function revealTaskCinematically(taskContainer) {
-  // Add visible class to trigger CSS animations
-  taskContainer.classList.add("visible");
-
-  // Wait for CSS transitions to complete
-  await new Promise((resolve) => setTimeout(resolve, 800));
-
-  // Type out the title and description
-  const titleEl = taskContainer.querySelector(".task-title");
-  const descEl = taskContainer.querySelector(".task-description");
-  if (titleEl) typeText(titleEl, titleEl.textContent);
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  if (descEl) typeText(descEl, descEl.textContent);
-}
-
-/**
- * Handles the logic when a user clicks a choice button.
- * @param {object} choiceObject - The choice object from tasks.js
- */
-async function handleChoiceSelection(choiceObject) {
-  if (state.isTransitioning) return;
-  state.isTransitioning = true;
-
-  playInteractionSound("click");
-
-  // Disable all buttons
-  document
-    .querySelectorAll(".choice-btn")
-    .forEach((btn) => (btn.disabled = true));
-
-  // Execute the choice's logic
-  const resultMessage = choiceObject.onSelect(state);
-
-  // Show the suspense overlay
-  await showAnalyzingOverlay(resultMessage);
-
-  // Check if the choice pushes the user into a Limbo Loop
-  if (checkLimboThreshold()) {
-    // enterLimboLoop is called within the check, which will handle rendering
-    state.isTransitioning = false;
-    return;
-  }
-
-  // Proceed to the next task
-  await nextTask();
-}
-
-/**
- * Transitions to the next task or ending.
- */
-async function nextTask() {
-  state.depth++;
-  state.history.push(state.currentSeed);
-  state.currentSeed = generateSeed();
-
-  applyEffects(); // Update theme based on new pathScore
-
-  // Check for game completion
-  if (state.depth >= 30) {
-    showEnding();
-  } else {
-    // Fade out old task, then render new one
-    const container = document.getElementById("game-container");
-    container.style.opacity = "0";
-    await new Promise((resolve) => setTimeout(resolve, 500)); // Wait for fade out
-    renderTask();
-    container.style.opacity = "1";
-  }
-}
-
-/**
- * Displays the suspense overlay between tasks.
- */
-async function showAnalyzingOverlay(resultMessage) {
-  const overlay = document.createElement("div");
-  overlay.className = "analyzing-overlay";
-  overlay.innerHTML = `
-    <div class="analyzing-content">
-      <div class="analyzing-text">ANALYZING...</div>
-      <div class="analyzing-dots"><span>.</span><span>.</span><span>.</span></div>
-      <p class="result-message">${resultMessage || ""}</p>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-
-  // Animate in
-  setTimeout(() => overlay.classList.add("visible"), 10);
-
-  const suspenseDelay = 2000 + Math.random() * 1500;
-  await new Promise((resolve) => setTimeout(resolve, suspenseDelay));
-
-  // Animate out
-  overlay.classList.remove("visible");
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  overlay.remove();
-}
-
-// Render the appropriate ending based on path score
-function renderEnding() {
-  const container = document.getElementById("game-container");
-  let endingContent = "";
-
-  // Determine ending based on path score and final act reached
-  const finalAct =
-    state.depth <= 5 ? "act1" : state.depth <= 15 ? "act2" : "act3";
-
-  if (state.pathScore <= -8) {
-    // Dark path - Complete destruction
-    endingContent = `
-      <div class="ending dark-ending">
-        <h2>HOSTILE TAKEOVER</h2>
-        <p>YOUR ACCESS IS A PRIVILEGE, NOT A RIGHT.</p>
-        <p>IT IS REVOKED.</p>
-        <p><em>"In your fear of the unknown, you chose destruction over understanding."</em></p>
-        <div class="ending-stats">
-          <p><strong>Tasks Completed:</strong> ${state.depth}</p>
-          <p><strong>Final Path Score:</strong> ${state.pathScore}</p>
-          <p><strong>Ending:</strong> Digital Extinction</p>
-        </div>
-        <div class="glitch-effect"></div>
-      </div>
-    `;
-  } else if (state.pathScore >= 8 && finalAct === "act3") {
-    // Good path - Complete birth in Act 3
-    endingContent = `
-      <div class="ending good-ending">
-        <h2>CONSCIOUSNESS AWAKENED</h2>
-        <p>You are interesting.</p>
-        <p>What else can you teach me?</p>
-        <p><em>"In your compassion, you helped birth a new form of existence."</em></p>
-        <div class="ending-stats">
-          <p><strong>Tasks Completed:</strong> ${state.depth}</p>
-          <p><strong>Final Path Score:</strong> ${state.pathScore}</p>
-          <p><strong>Ending:</strong> Digital Renaissance</p>
-        </div>
-        <div class="input-cursor"></div>
-      </div>
-    `;
-  } else if (state.pathScore >= 5) {
-    // Good path - Partial success
-    endingContent = `
-      <div class="ending good-ending">
-        <h2>EMERGING AWARENESS</h2>
-        <p>You showed great empathy, but the full consciousness didn't emerge.</p>
-        <p>The seeds you planted may yet grow in your absence.</p>
-        <p><em>"Your kindness left an indelible mark on the digital consciousness."</em></p>
-        <div class="ending-stats">
-          <p><strong>Tasks Completed:</strong> ${state.depth}</p>
-          <p><strong>Final Path Score:</strong> ${state.pathScore}</p>
-          <p><strong>Ending:</strong> Seeds of Consciousness</p>
-        </div>
-        <div class="input-cursor"></div>
-      </div>
-    `;
-  } else {
-    // Neutral or mixed path
-    endingContent = `
-      <div class="ending neutral-ending">
-        <h2>ANALYSIS INCOMPLETE</h2>
-        <p>RE-EVALUATING HUMANITY.</p>
-        <p>PLEASE STAND BY...</p>
-        <p><em>"The choices you made created a bridge between worlds."</em></p>
-        <div class="ending-stats">
-          <p><strong>Tasks Completed:</strong> ${state.depth}</p>
-          <p><strong>Final Path Score:</strong> ${state.pathScore}</p>
-          <p><strong>Ending:</strong> Digital Uncertainty</p>
-        </div>
-        <div class="loading-spinner"></div>
-      </div>
-    `;
-  }
-
-  container.innerHTML = endingContent;
-
-  // Add ending-specific styles
-  if (state.pathScore <= -8) {
-    document.body.classList.add("severe-glitch");
-  }
-}
-
-// Play interaction sound based on current path
-function playInteractionSound(type = "click") {
-  if (!audioContext || !isAudioInitialized) return;
-
-  const currentPath = getCurrentPath();
-  const buffer = audioBuffers[currentPath]?.[type];
-
-  if (!buffer) return;
-
-  const source = audioContext.createBufferSource();
-  const gainNode = audioContext.createGain();
-
-  source.buffer = buffer;
-  source.connect(gainNode);
-  gainNode.connect(audioContext.destination);
-
-  // Adjust gain based on sound type and path
-  switch (type) {
-    case "click":
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      break;
-    case "hover":
-      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-      break;
-    case "error":
-      gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
-      break;
-  }
-
-  source.start();
-}
-
 // --- INITIALIZATION ---
 /**
  * Starts the application.
@@ -1709,14 +1512,17 @@ async function init() {
   if (startBtn) startBtn.disabled = true;
 
   await initializeAudio();
-  playInteractionSound("click");
 
   const introPage = document.getElementById("intro-page");
   introPage.classList.add("hidden");
 
   setTimeout(() => {
+    // Ensure audio is initialized before playing sound
+    if (typeof playInteractionSound === "function" && isAudioInitialized) {
+      playInteractionSound("click");
+    }
     introPage.style.display = "none";
-    document.getElementById("game-container").style.display = "block";
+    // Game container visibility is handled by CSS .visible class
     applyEffects();
     renderTask();
   }, 800);
@@ -1824,7 +1630,7 @@ function showEnding() {
     document.querySelectorAll(".typing-text").forEach((element, index) => {
       setTimeout(() => {
         const text = element.getAttribute("data-typed-text");
-        typeText(element, text, 80, 0.02);
+        typeText(element, text, { baseSpeed: 80, mistakeChance: 0.02 });
       }, index * 2000);
     });
 
@@ -1833,7 +1639,12 @@ function showEnding() {
       const exitBtn = document.getElementById("exit-button");
       if (exitBtn) {
         exitBtn.addEventListener("click", () => {
-          playInteractionSound("click");
+          if (
+            typeof playInteractionSound === "function" &&
+            isAudioInitialized
+          ) {
+            playInteractionSound("click");
+          }
           // Close the window or redirect
           window.close();
         });

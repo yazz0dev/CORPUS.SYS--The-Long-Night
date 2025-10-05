@@ -1175,10 +1175,21 @@ button[type="button"] {
   color: #00ff00;
   overflow-y: auto;
   display: none;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 2rem;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.8s ease;
+  position: relative;
+  z-index: 10;
 }
 
 #game-container.visible {
   display: block !important;
+  opacity: 1 !important;
+  transform: translateY(0) !important;
 }
 
 /* Task Interface Styles */
@@ -2757,23 +2768,7 @@ body.neutral-path {
   }
 }
 
-/* Task Container */
-#game-container {
-  width: 100%;
-  max-width: 100%;
-  margin: 0 auto;
-  padding: 2rem;
-  opacity: 0;
-  transform: translateY(20px);
-  transition: all 0.8s ease;
-  position: relative;
-  z-index: 10;
-}
-
-#game-container.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
+/* Task Container - Consolidated above */
 
 /* Legacy body.task-container styles removed - not used in current implementation */
 
@@ -4029,4 +4024,56 @@ body.neutral-path {
     filter: hue-rotate(270deg) contrast(1.2);
     transform: scale(0.98);
   }
+}
+
+/* --- FINAL FIX FOR CINEMATIC REVEAL --- */
+
+/* The task container itself starts invisible and is animated by JS */
+.task-container {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+
+/* When the .visible class is added, it becomes visible */
+.task-container.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* The children of the container are ALSO initially invisible and transition in */
+.task-container .task-header,
+.task-container .task-content,
+.task-container .task-choices {
+  opacity: 0;
+  transition: opacity 0.8s ease 0.3s, transform 0.8s ease 0.3s; /* 0.3s delay allows container to appear first */
+}
+
+.task-container .task-header {
+  transform: translateY(-15px);
+}
+
+.task-container .task-content {
+  transform: translateY(15px);
+}
+
+.task-container .task-choices {
+  transform: translateY(25px);
+}
+
+/* When the parent .task-container becomes visible, the children animate in */
+.task-container.visible .task-header,
+.task-container.visible .task-content,
+.task-container.visible .task-choices {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Minor fix for result message in overlay */
+.result-message {
+  margin-top: 1rem;
+  font-size: 1rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  opacity: 0.8;
 }
