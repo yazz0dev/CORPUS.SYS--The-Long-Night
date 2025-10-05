@@ -1522,7 +1522,13 @@ async function init() {
       playInteractionSound("click");
     }
     introPage.style.display = "none";
-    // Game container visibility is handled by CSS .visible class
+
+    // --- START OF FIX ---
+    const gameContainer = document.getElementById("game-container");
+    gameContainer.style.display = "block";
+    gameContainer.classList.add("visible");
+    // --- END OF FIX ---
+
     applyEffects();
     renderTask();
   }, 800);
