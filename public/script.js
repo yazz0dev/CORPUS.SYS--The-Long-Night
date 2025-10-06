@@ -1516,21 +1516,30 @@ async function init() {
   const introPage = document.getElementById("intro-page");
   introPage.classList.add("hidden");
 
-  setTimeout(() => {
-    // Ensure audio is initialized before playing sound
+  // Wait for intro to fade out
+  setTimeout(async () => {
     if (typeof playInteractionSound === "function" && isAudioInitialized) {
       playInteractionSound("click");
     }
     introPage.style.display = "none";
 
-    // --- START OF FIX ---
     const gameContainer = document.getElementById("game-container");
-    gameContainer.style.display = "block";
-    gameContainer.classList.add("visible");
-    // --- END OF FIX ---
 
+    // Prepare the game container - make it exist but keep it invisible
+    gameContainer.style.display = "block";
+    gameContainer.style.opacity = "0";
+    
+    // Apply initial theme effects
     applyEffects();
-    renderTask();
+    
+    // Render the first task into the invisible container
+    // renderTask handles its own internal cinematic reveal animations
+    await renderTask();
+
+    // Now, fade in the game container which now holds the ready-to-animate task
+    gameContainer.style.transition = "opacity 0.8s ease-in";
+    gameContainer.style.opacity = "1";
+    
   }, 800);
 }
 
